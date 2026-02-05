@@ -1,3 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoVision Entry</title>
+</head>
+
+<body style="font-family:Arial;padding:20px">
+
+<h2>New Expense</h2>
+
+<input id="vendor" placeholder="Vendor Name" style="width:100%;padding:10px"><br><br>
+
+<input id="amount" type="number" placeholder="Amount" style="width:100%;padding:10px"><br><br>
+
+<input id="photo" type="file" accept="image/*" style="width:100%;padding:10px"><br><br>
+
+<button onclick="submitData()" style="width:100%;padding:15px;background:green;color:white">
+Submit
+</button>
+
+<p id="msg"></p>
+
 <script>
 const SUPABASE_URL = "https://qobnvvhefcxxarchdxsh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_UUsw6Eg8stkb543Mbtqv5A_Xd7VDxzX";
@@ -17,54 +40,53 @@ async function submitData(){
 
  try {
 
- if(photo){
-   const fileName = Date.now()+"_"+photo.name;
+   // Upload photo
+   if(photo){
+     const fileName = Date.now()+"_"+photo.name;
 
-   const upload = await fetch(
-     SUPABASE_URL + "/storage/v1/object/bills/" + fileName,
-     {
-       method:"POST",
-       headers:{
-         "apikey":SUPABASE_KEY,
-         "Authorization":"Bearer "+SUPABASE_KEY,
-         "Content-Type": photo.type
-       },
-       body: photo
+     const upload = await fetch(
+       SUPABASE_URL + "/storage/v1/object/bills/" + fileName,
+       {
+         method:"POST",
+         headers:{
+           "apikey":SUPABASE_KEY,
+           "Authorization":"Bearer "+SUPABASE_KEY,
+           "Content-Type": photo.type
+         },
+         body: photo
+       }
+     );
+
+     if(!upload.ok){
+       alert("Photo upload failed");
+       return;
      }
-   );
 
-   if(!upload.ok){
-     alert("Photo upload failed");
+     billUrl = SUPABASE_URL + "/storage/v1/object/public/bills/" + fileName;
+   }
+
+   // Insert invoice via RPC
+   const inv = await fetch(SUPABASE_URL+"/rest/v1/rpc/insert_invoice",{
+     method:"POST",
+     headers:{
+       "apikey":SUPABASE_KEY,
+       "Authorization":"Bearer "+SUPABASE_KEY,
+       "Content-Type":"application/json"
+     },
+     body:JSON.stringify({
+       v_vendor: vendor,
+       v_amount: amount,
+       v_bill: billUrl
+     })
+   });
+
+   if(!inv.ok){
+     const t = await inv.text();
+     alert("Invoice insert failed: "+t);
      return;
    }
 
-   billUrl = SUPABASE_URL + "/storage/v1/object/public/bills/" + fileName;
- }
-
- const inv = await fetch(SUPABASE_URL+"/rest/v1/invoices",{
-   method:"POST",
-   headers:{
-     "apikey":SUPABASE_KEY,
-     "Authorization":"Bearer "+SUPABASE_KEY,
-     "Content-Type":"application/json",
-     "Prefer":"return=representation"
-   },
-   body:JSON.stringify({
-     vendor_name:vendor,
-     amount:amount,
-     bill_url: billUrl,
-     pushed_to_tally:false
-   })
- });
-
- const txt = await inv.text();
-
- if(!inv.ok){
-   alert("Invoice insert failed: " + txt);
-   return;
- }
-
- document.getElementById("msg").innerHTML="Saved ✔<br>"+txt;
+   document.getElementById("msg").innerHTML="Saved ✔";
 
  } catch(e){
    alert(e.message);
@@ -72,3 +94,6 @@ async function submitData(){
 
 }
 </script>
+
+</body>
+</html>
