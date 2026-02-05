@@ -35,6 +35,7 @@ async function submitData(){
 
  const vendor = document.getElementById("vendor").value;
  const amount = document.getElementById("amount").value;
+ const mode = document.getElementById("mode").value;
  const photo = document.getElementById("photo").files[0];
 
  if(!vendor || !amount){
@@ -80,10 +81,11 @@ async function submitData(){
        "Content-Type":"application/json"
      },
      body:JSON.stringify({
-       v_vendor: vendor,
-       v_amount: amount,
-       v_bill: billUrl
-     })
+ v_vendor:vendor,
+ v_amount:amount,
+ v_bill:billUrl,
+ v_mode:mode
+})
    });
 
    if(!inv.ok){
